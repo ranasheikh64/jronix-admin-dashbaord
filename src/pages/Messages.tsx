@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Mail, CheckCircle, Clock } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import apiClient from '../api/client';
 
 export default function Messages() {
