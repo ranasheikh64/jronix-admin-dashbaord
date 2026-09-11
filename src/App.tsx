@@ -25,6 +25,7 @@ import ReviewsPage from './pages/Reviews';
 import MessagesPage from './pages/Messages';
 import ContactSettingsPage from './pages/ContactSettings';
 import FooterSettingsPage from './pages/FooterSettings';
+import ProcessPage from './pages/Process';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -35,6 +36,7 @@ const Sidebar = () => {
     { name: 'Hero Section', path: '/hero', icon: ImageIcon },
     { name: 'About Section', path: '/about', icon: Info },
     { name: 'Services', path: '/services', icon: Briefcase },
+    { name: 'Process', path: '/process', icon: Layers },
     { name: 'Projects', path: '/projects', icon: Layers },
     { name: 'Team', path: '/team', icon: Info },
     { name: 'Tech Stack', path: '/tech', icon: Layers },
@@ -108,6 +110,7 @@ function App() {
               <Route path="/team" element={<TeamPage />} />
               <Route path="/tech" element={<TechPage />} />
               <Route path="/services" element={<ServicesPage />} />
+              <Route path="/process" element={<ProcessPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/careers" element={<CareersPage />} />
               <Route path="/reviews" element={<ReviewsPage />} />

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const apiClient = axios.create({
-  baseURL: 'https://jronix-backend.vercel.app/api',
+  baseURL: 'http://localhost:5000/api', // Temporarily changed to local
   headers: {
     'Content-Type': 'application/json',
   },
