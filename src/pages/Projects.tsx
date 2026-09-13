@@ -49,7 +49,7 @@ export default function Projects() {
     setUploading(true);
     try {
       // Use raw fetch or a separate axios call to avoid the global JSON content-type interfering with the multipart boundary
-      const res = await fetch('http://localhost:5000/api/upload', {
+      const res = await fetch('https://jronix-backend.vercel.app/api/upload', {
         method: 'POST',
         body: uploadData,
       });
