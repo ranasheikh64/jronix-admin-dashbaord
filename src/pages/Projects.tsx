@@ -11,11 +11,12 @@ export default function Projects() {
   // Form State
   const [formData, setFormData] = useState({
     title: '',
-    category: '',
+    category: 'App',
     description: '',
     image: '',
+    gallery: [] as string[],
     link: '#',
-    githubLink: '#',
+    appStoreLink: '#',
     techStack: '',
     typeBadge: '',
     isFeatured: false,
@@ -41,47 +42,86 @@ export default function Projects() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
-    
+
     const file = e.target.files[0];
     const uploadData = new FormData();
     uploadData.append('image', file);
 
     setUploading(true);
     try {
-      // Use raw fetch or a separate axios call to avoid the global JSON content-type interfering with the multipart boundary
       const res = await fetch('https://jronix-backend.vercel.app/api/upload', {
         method: 'POST',
         body: uploadData,
       });
-      
+
       const data = await res.json();
-      
+
       if (!res.ok) {
         throw new Error(data.message || 'Upload failed');
       }
-      
+
       console.log('Upload success:', data);
       setFormData({ ...formData, image: data.url });
     } catch (error: any) {
       console.error('Upload failed fully:', error);
-      const errorMessage = error.message || 'Unknown error';
-      console.error('Error message:', errorMessage);
-      alert('Image upload failed: ' + errorMessage);
+      alert('Image upload failed: ' + (error.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
   };
 
+  const handleGalleryUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+
+    const files = Array.from(e.target.files);
+
+    if (formData.gallery.length + files.length > 10) {
+      alert('You can only upload up to 10 images in the gallery.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const newUrls = [...formData.gallery];
+      for (const file of files) {
+        const uploadData = new FormData();
+        uploadData.append('image', file);
+
+        const res = await fetch('http://localhost:5000/api/upload', {
+          method: 'POST',
+          body: uploadData,
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          newUrls.push(data.url);
+        }
+      }
+      setFormData({ ...formData, gallery: newUrls });
+    } catch (error: any) {
+      alert('Gallery upload failed: ' + (error.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeGalleryImage = (index: number) => {
+    const newGallery = [...formData.gallery];
+    newGallery.splice(index, 1);
+    setFormData({ ...formData, gallery: newGallery });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const payload = {
       title: formData.title,
       category: formData.category,
       description: formData.description,
       image: formData.image,
+      gallery: formData.gallery,
       link: formData.link,
-      githubLink: formData.githubLink,
+      appStoreLink: formData.category.toLowerCase() === 'app' ? formData.appStoreLink : '#',
       typeBadge: formData.typeBadge,
       isFeatured: formData.isFeatured,
       techStack: formData.techStack.split(',').map(s => s.trim()).filter(Boolean),
@@ -121,11 +161,12 @@ export default function Projects() {
     setEditingId(project._id);
     setFormData({
       title: project.title || '',
-      category: project.category || '',
+      category: project.category || 'App',
       description: project.description || '',
       image: project.image || '',
+      gallery: project.gallery || [],
       link: project.link || '#',
-      githubLink: project.githubLink || '#',
+      appStoreLink: project.appStoreLink || '#',
       typeBadge: project.typeBadge || '',
       isFeatured: project.isFeatured || false,
       techStack: project.techStack?.join(', ') || '',
@@ -138,7 +179,7 @@ export default function Projects() {
   const resetForm = () => {
     setEditingId(null);
     setFormData({
-      title: '', category: '', description: '', image: '', link: '#', githubLink: '#',
+      title: '', category: 'App', description: '', image: '', gallery: [], link: '#', appStoreLink: '#',
       techStack: '', typeBadge: '', isFeatured: false,
       statsUsers: '', statsRating: '', statsYear: ''
     });
@@ -189,35 +230,39 @@ export default function Projects() {
       <div>
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 sticky top-24">
           <h2 className="text-xl font-bold mb-6">{editingId ? 'Edit Project' : 'Add New Project'}</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Title</label>
-              <input type="text" required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" />
+              <input type="text" required value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Category</label>
-                <input type="text" required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" />
+                <select required value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500">
+                  <option value="App">App</option>
+                  <option value="Web">Web</option>
+                  <option value="Wordpress">Wordpress</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Badge</label>
-                <input type="text" value={formData.typeBadge} onChange={e => setFormData({...formData, typeBadge: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" />
+                <input type="text" value={formData.typeBadge} onChange={e => setFormData({ ...formData, typeBadge: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" />
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-slate-400 mb-1">Description</label>
-              <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20" />
+              <textarea required value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500 h-20" />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">Image Upload</label>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Main Cover Image Upload</label>
               <div className="flex gap-4 items-center">
                 <label className="flex-1 flex items-center justify-center gap-2 border border-dashed border-slate-700 bg-slate-950 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
                   <ImageIcon size={18} className="text-slate-400" />
-                  <span className="text-sm text-slate-400">{uploading ? 'Uploading...' : 'Click to Upload Image'}</span>
+                  <span className="text-sm text-slate-400">{uploading ? 'Uploading...' : 'Click to Upload Main Image'}</span>
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploading} />
                 </label>
                 {formData.image && <img src={formData.image} alt="Preview" className="w-16 h-16 rounded object-cover border border-slate-800" />}
@@ -225,38 +270,68 @@ export default function Projects() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-400 mb-1">Tech Stack (comma separated)</label>
-              <input type="text" value={formData.techStack} onChange={e => setFormData({...formData, techStack: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="React, Node, MongoDB" />
+              <label className="block text-sm font-medium text-slate-400 mb-1">Gallery Images (Max 10)</label>
+              <div className="flex flex-col gap-3">
+                <label className="flex-1 flex items-center justify-center gap-2 border border-dashed border-slate-700 bg-slate-950 rounded-lg p-4 cursor-pointer hover:border-blue-500 transition">
+                  <ImageIcon size={18} className="text-slate-400" />
+                  <span className="text-sm text-slate-400">{uploading ? 'Uploading...' : 'Select multiple images'}</span>
+                  <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" disabled={uploading} />
+                </label>
+                {formData.gallery.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.gallery.map((url, i) => (
+                      <div key={i} className="relative group">
+                        <img src={url} alt="Gallery item" className="w-16 h-16 rounded object-cover border border-slate-800" />
+                        <button type="button" onClick={() => removeGalleryImage(i)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition shadow">
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-1">Tech Stack (comma separated)</label>
+              <input type="text" value={formData.techStack} onChange={e => setFormData({ ...formData, techStack: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="React, Node, MongoDB" />
+            </div>
+
+            {formData.category?.toLowerCase() === 'app' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">Play Store Link</label>
+                  <input type="text" value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="https://play.google.com/..." />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-400 mb-1">App Store Link</label>
+                  <input type="text" value={formData.appStoreLink} onChange={e => setFormData({ ...formData, appStoreLink: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="https://apps.apple.com/..." />
+                </div>
+              </div>
+            ) : (
               <div>
                 <label className="block text-sm font-medium text-slate-400 mb-1">Live Link</label>
-                <input type="text" value={formData.link} onChange={e => setFormData({...formData, link: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="https://..." />
+                <input type="text" value={formData.link} onChange={e => setFormData({ ...formData, link: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="https://..." />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-400 mb-1">GitHub Link</label>
-                <input type="text" value={formData.githubLink} onChange={e => setFormData({...formData, githubLink: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-4 py-2 text-white outline-none focus:border-blue-500" placeholder="https://github.com/..." />
-              </div>
-            </div>
+            )}
 
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Users Stat</label>
-                <input type="text" value={formData.statsUsers} onChange={e => setFormData({...formData, statsUsers: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white outline-none focus:border-blue-500" />
+                <input type="text" value={formData.statsUsers} onChange={e => setFormData({ ...formData, statsUsers: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Rating Stat</label>
-                <input type="text" value={formData.statsRating} onChange={e => setFormData({...formData, statsRating: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white outline-none focus:border-blue-500" />
+                <input type="text" value={formData.statsRating} onChange={e => setFormData({ ...formData, statsRating: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white outline-none focus:border-blue-500" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-400 mb-1">Year Stat</label>
-                <input type="text" value={formData.statsYear} onChange={e => setFormData({...formData, statsYear: e.target.value})} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white outline-none focus:border-blue-500" />
+                <input type="text" value={formData.statsYear} onChange={e => setFormData({ ...formData, statsYear: e.target.value })} className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-white outline-none focus:border-blue-500" />
               </div>
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer mt-4">
-              <input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({...formData, isFeatured: e.target.checked})} className="rounded bg-slate-900 border-slate-700 text-blue-500" />
+              <input type="checkbox" checked={formData.isFeatured} onChange={e => setFormData({ ...formData, isFeatured: e.target.checked })} className="rounded bg-slate-900 border-slate-700 text-blue-500" />
               <span className="text-sm text-slate-300">Featured Project</span>
             </label>
 
